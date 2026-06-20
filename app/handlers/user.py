@@ -16,10 +16,12 @@ from app.database.requests import (
     get_categories,
     get_or_create_user,
     get_products,
+    get_user_orders,
     remove_cart_item,
     set_user_lang,
 )
 from app.keyboards import (
+    back_menu_keyboard,
     cart_empty_keyboard,
     cart_keyboard,
     categories_keyboard,
@@ -29,7 +31,7 @@ from app.keyboards import (
     product_keyboard,
 )
 from app.states import Checkout
-from app.texts import t
+from app.texts import status_label, t
 from config import settings
 
 router = Router()
@@ -152,6 +154,27 @@ async def open_home(callback: CallbackQuery, session: AsyncSession) -> None:
 async def open_cart(callback: CallbackQuery, session: AsyncSession) -> None:
     user, _ = await _user(session, callback)
     await render_cart(callback, session, user)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "menu:orders")
+async def open_orders(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    orders = await get_user_orders(session, user.id)
+    if not orders:
+        text = t("orders_empty", user.lang)
+    else:
+        blocks = []
+        for order in orders:
+            items = "\n".join(
+                f"  • {item.product.name} ×{item.quantity}" for item in order.items
+            )
+            blocks.append(
+                f"<b>#{order.id}</b> · {status_label(order.status, user.lang)} · "
+                f"<b>${order.total}</b>\n{items}"
+            )
+        text = t("orders_title", user.lang) + "\n\n" + "\n\n".join(blocks)
+    await callback.message.edit_text(text, reply_markup=back_menu_keyboard(user.lang))
     await callback.answer()
 
 

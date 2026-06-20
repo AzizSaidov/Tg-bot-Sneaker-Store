@@ -120,3 +120,13 @@ async def create_order(
     await session.execute(delete(CartItem).where(CartItem.user_id == user_id))
     await session.commit()
     return order
+
+
+async def get_user_orders(session: AsyncSession, user_id: int) -> list[Order]:
+    result = await session.scalars(
+        select(Order)
+        .where(Order.user_id == user_id)
+        .order_by(Order.id.desc())
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+    )
+    return list(result)

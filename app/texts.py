@@ -31,6 +31,9 @@ TEXTS = {
         "order_cancelled": "❌ Order cancelled.",
         "btn_confirm": "✅ Confirm",
         "btn_cancel": "❌ Cancel",
+        "orders_title": "🧾 <b>My Orders</b>",
+        "orders_empty": "🧾 You have no orders yet.",
+        "status_new": "🆕 New",
     },
     "ru": {
         "choose_language": "🌐 Выберите язык:",
@@ -62,9 +65,16 @@ TEXTS = {
         "order_cancelled": "❌ Заказ отменён.",
         "btn_confirm": "✅ Подтвердить",
         "btn_cancel": "❌ Отмена",
+        "orders_title": "🧾 <b>Мои заказы</b>",
+        "orders_empty": "🧾 У вас пока нет заказов.",
+        "status_new": "🆕 Новый",
     },
 }
 
 
 def t(key: str, lang: str) -> str:
     return TEXTS.get(lang, TEXTS[DEFAULT_LANG]).get(key, key)
+
+
+def status_label(status: str, lang: str) -> str:
+    return t(f"status_{status}", lang)
