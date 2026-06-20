@@ -1,7 +1,19 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 
 from app.database.models import CartItem, Category, Order, Product
 from app.texts import STATUSES, status_label, t
+
+
+def menu_reply_keyboard(lang: str) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=t("btn_menu", lang))]],
+        resize_keyboard=True,
+    )
 
 
 def language_keyboard() -> InlineKeyboardMarkup:

@@ -30,6 +30,7 @@ from app.keyboards import (
     confirm_keyboard,
     language_keyboard,
     main_menu,
+    menu_reply_keyboard,
     product_keyboard,
 )
 from app.states import AiChat, Checkout
@@ -92,12 +93,32 @@ async def render_cart(callback: CallbackQuery, session: AsyncSession, user: User
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession) -> None:
     user, created = await _user(session, message)
+    welcome = os.path.join("media", "welcome.jpg")
+    caption = t("welcome", user.lang)
+    if os.path.exists(welcome):
+        await message.answer_photo(
+            FSInputFile(welcome), caption=caption, reply_markup=menu_reply_keyboard(user.lang)
+        )
+    else:
+        await message.answer(caption, reply_markup=menu_reply_keyboard(user.lang))
     if created:
         await message.answer(
             t("choose_language", user.lang), reply_markup=language_keyboard()
         )
     else:
         await message.answer(t("menu", user.lang), reply_markup=main_menu(user.lang))
+
+
+@router.message(Command("myid"))
+async def cmd_myid(message: Message) -> None:
+    await message.answer(f"🆔 Your Telegram ID: <code>{message.from_user.id}</code>")
+
+
+@router.message(F.text.in_({"🏠 Menu", "🏠 Меню"}))
+async def reply_menu(message: Message, session: AsyncSession, state: FSMContext) -> None:
+    await state.clear()
+    user, _ = await _user(session, message)
+    await message.answer(t("menu", user.lang), reply_markup=main_menu(user.lang))
 
 
 @router.message(Command("menu"))
@@ -210,7 +231,10 @@ async def ai_message(
     lines = []
     for category in categories:
         for product in await get_products(session, category.id):
-            lines.append(f"- {product.brand} {product.name} (${product.price}) [{category.name}]")
+            lines.append(
+                f"- {product.brand} {product.name} (${product.price}) "
+                f"[{category.name}], stock: {product.stock}"
+            )
     catalog = "\n".join(lines)
 
     orders = await get_user_orders(session, user.id)
