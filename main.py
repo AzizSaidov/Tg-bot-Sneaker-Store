@@ -6,7 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from app.database.engine import init_db
-from app.handlers import user
+from app.handlers import admin, user
 from app.middlewares.db import DbSessionMiddleware
 from config import settings
 
@@ -20,6 +20,7 @@ async def main() -> None:
     )
     dp = Dispatcher()
     dp.update.middleware(DbSessionMiddleware())
+    dp.include_router(admin.router)
     dp.include_router(user.router)
 
     await bot.delete_webhook(drop_pending_updates=True)

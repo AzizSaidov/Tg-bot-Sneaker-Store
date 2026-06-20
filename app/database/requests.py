@@ -130,3 +130,27 @@ async def get_user_orders(session: AsyncSession, user_id: int) -> list[Order]:
         .options(selectinload(Order.items).selectinload(OrderItem.product))
     )
     return list(result)
+
+
+async def get_all_orders(session: AsyncSession) -> list[Order]:
+    result = await session.scalars(
+        select(Order)
+        .order_by(Order.id.desc())
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+    )
+    return list(result)
+
+
+async def get_order(session: AsyncSession, order_id: int) -> Order | None:
+    return await session.scalar(
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.items).selectinload(OrderItem.product))
+    )
+
+
+async def set_order_status(session: AsyncSession, order_id: int, status: str) -> None:
+    order = await session.get(Order, order_id)
+    if order is not None:
+        order.status = status
+        await session.commit()

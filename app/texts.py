@@ -34,6 +34,17 @@ TEXTS = {
         "orders_title": "🧾 <b>My Orders</b>",
         "orders_empty": "🧾 You have no orders yet.",
         "status_new": "🆕 New",
+        "status_paid": "💳 Paid",
+        "status_shipped": "🚚 Shipped",
+        "status_done": "✅ Done",
+        "status_cancelled": "❌ Cancelled",
+        "admin_title": "🛠 <b>Admin Panel</b>",
+        "admin_orders": "📦 Orders",
+        "admin_add_product": "➕ Add Product",
+        "admin_stats": "📊 Statistics",
+        "admin_no_orders": "No orders yet.",
+        "status_changed": "✅ Status updated",
+        "btn_back": "⬅️ Back",
     },
     "ru": {
         "choose_language": "🌐 Выберите язык:",
@@ -68,6 +79,17 @@ TEXTS = {
         "orders_title": "🧾 <b>Мои заказы</b>",
         "orders_empty": "🧾 У вас пока нет заказов.",
         "status_new": "🆕 Новый",
+        "status_paid": "💳 Оплачен",
+        "status_shipped": "🚚 Отправлен",
+        "status_done": "✅ Выполнен",
+        "status_cancelled": "❌ Отменён",
+        "admin_title": "🛠 <b>Админ-панель</b>",
+        "admin_orders": "📦 Заказы",
+        "admin_add_product": "➕ Добавить товар",
+        "admin_stats": "📊 Статистика",
+        "admin_no_orders": "Заказов пока нет.",
+        "status_changed": "✅ Статус обновлён",
+        "btn_back": "⬅️ Назад",
     },
 }
 
@@ -78,3 +100,6 @@ def t(key: str, lang: str) -> str:
 
 def status_label(status: str, lang: str) -> str:
     return t(f"status_{status}", lang)
+
+
+STATUSES = ("new", "paid", "shipped", "done", "cancelled")

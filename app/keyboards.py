@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from app.database.models import CartItem, Category, Product
-from app.texts import t
+from app.database.models import CartItem, Category, Order, Product
+from app.texts import STATUSES, status_label, t
 
 
 def language_keyboard() -> InlineKeyboardMarkup:
@@ -109,3 +109,36 @@ def confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def admin_menu(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=t("admin_orders", lang), callback_data="admin:orders")],
+            [InlineKeyboardButton(text=t("admin_add_product", lang), callback_data="admin:add")],
+            [InlineKeyboardButton(text=t("admin_stats", lang), callback_data="admin:stats")],
+        ]
+    )
+
+
+def admin_orders_keyboard(orders: list[Order], lang: str) -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=f"#{o.id} · {status_label(o.status, lang)} · ${o.total}",
+                callback_data=f"aorder:{o.id}",
+            )
+        ]
+        for o in orders
+    ]
+    rows.append([InlineKeyboardButton(text=t("btn_back", lang), callback_data="admin:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def admin_order_keyboard(order_id: int, lang: str) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=status_label(s, lang), callback_data=f"astatus:{order_id}:{s}")]
+        for s in STATUSES
+    ]
+    rows.append([InlineKeyboardButton(text=t("btn_back", lang), callback_data="admin:orders")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
