@@ -11,6 +11,12 @@ TEXTS = {
         "btn_ai": "🤖 AI Assistant",
         "btn_language": "🌐 Language",
         "soon": "🚧 Coming soon",
+        "catalog_title": "🛍 <b>Catalog</b>\n\nChoose a category:",
+        "in_stock": "In stock",
+        "empty_category": "No products in this category yet.",
+        "btn_add_cart": "🛒 Add to cart",
+        "btn_categories": "⬅️ Categories",
+        "btn_menu": "🏠 Menu",
     },
     "ru": {
         "choose_language": "🌐 Выберите язык:",
@@ -22,6 +28,12 @@ TEXTS = {
         "btn_ai": "🤖 AI-консультант",
         "btn_language": "🌐 Язык",
         "soon": "🚧 Скоро будет",
+        "catalog_title": "🛍 <b>Каталог</b>\n\nВыберите категорию:",
+        "in_stock": "В наличии",
+        "empty_category": "В этой категории пока нет товаров.",
+        "btn_add_cart": "🛒 В корзину",
+        "btn_categories": "⬅️ Категории",
+        "btn_menu": "🏠 Меню",
     },
 }
 
