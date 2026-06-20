@@ -15,6 +15,7 @@ from app.database.requests import (
     get_categories,
     get_or_create_user,
     get_order,
+    get_stats,
     set_order_status,
 )
 from app.keyboards import (
@@ -226,6 +227,15 @@ async def delete_product_cb(callback: CallbackQuery, session: AsyncSession) -> N
 
 
 @router.callback_query(F.data == "admin:stats")
-async def admin_soon(callback: CallbackQuery, session: AsyncSession) -> None:
+async def admin_stats(callback: CallbackQuery, session: AsyncSession) -> None:
     lang = await _lang(session, callback)
-    await callback.answer(t("soon", lang), show_alert=True)
+    total_orders, revenue, top = await get_stats(session)
+    lines = "\n".join(f"  {i}. {name} — {qty}" for i, (name, qty) in enumerate(top, 1)) or "—"
+    text = (
+        f"{t('stats_title', lang)}\n\n"
+        f"📦 {t('stats_orders', lang)}: <b>{total_orders}</b>\n"
+        f"💰 {t('stats_revenue', lang)}: <b>${revenue}</b>\n\n"
+        f"🏆 {t('stats_top', lang)}:\n{lines}"
+    )
+    await callback.message.edit_text(text, reply_markup=admin_menu(lang))
+    await callback.answer()

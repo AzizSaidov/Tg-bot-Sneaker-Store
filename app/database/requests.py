@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -190,3 +190,16 @@ async def delete_product(session: AsyncSession, product_id: int) -> None:
     if product is not None:
         await session.delete(product)
         await session.commit()
+
+
+async def get_stats(session: AsyncSession) -> tuple[int, float, list]:
+    total_orders = await session.scalar(select(func.count(Order.id)))
+    revenue = await session.scalar(select(func.coalesce(func.sum(Order.total), 0)))
+    top = await session.execute(
+        select(Product.name, func.sum(OrderItem.quantity).label("qty"))
+        .join(OrderItem, OrderItem.product_id == Product.id)
+        .group_by(Product.id)
+        .order_by(func.sum(OrderItem.quantity).desc())
+        .limit(5)
+    )
+    return total_orders, revenue, top.all()

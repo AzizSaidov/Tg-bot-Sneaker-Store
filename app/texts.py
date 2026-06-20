@@ -57,6 +57,10 @@ TEXTS = {
         "product_added": "✅ Product added!",
         "delete_choose": "🗑 Tap a product to delete:",
         "product_deleted": "🗑 Product deleted",
+        "stats_title": "📊 <b>Statistics</b>",
+        "stats_orders": "Orders",
+        "stats_revenue": "Revenue",
+        "stats_top": "Top products",
     },
     "ru": {
         "choose_language": "🌐 Выберите язык:",
@@ -114,6 +118,10 @@ TEXTS = {
         "product_added": "✅ Товар добавлен!",
         "delete_choose": "🗑 Нажмите на товар для удаления:",
         "product_deleted": "🗑 Товар удалён",
+        "stats_title": "📊 <b>Статистика</b>",
+        "stats_orders": "Заказов",
+        "stats_revenue": "Выручка",
+        "stats_top": "Топ товаров",
     },
 }
 
