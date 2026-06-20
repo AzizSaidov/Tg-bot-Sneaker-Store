@@ -116,9 +116,28 @@ def admin_menu(lang: str) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text=t("admin_orders", lang), callback_data="admin:orders")],
             [InlineKeyboardButton(text=t("admin_add_product", lang), callback_data="admin:add")],
+            [InlineKeyboardButton(text=t("admin_delete", lang), callback_data="admin:del")],
             [InlineKeyboardButton(text=t("admin_stats", lang), callback_data="admin:stats")],
         ]
     )
+
+
+def add_category_keyboard(categories: list[Category], lang: str) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=f"{c.emoji} {c.name}", callback_data=f"addcat:{c.id}")]
+        for c in categories
+    ]
+    rows.append([InlineKeyboardButton(text=t("btn_back", lang), callback_data="admin:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def delete_products_keyboard(products: list[Product], lang: str) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text=f"🗑 {p.brand} {p.name}", callback_data=f"delprod:{p.id}")]
+        for p in products
+    ]
+    rows.append([InlineKeyboardButton(text=t("btn_back", lang), callback_data="admin:home")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def admin_orders_keyboard(orders: list[Order], lang: str) -> InlineKeyboardMarkup:

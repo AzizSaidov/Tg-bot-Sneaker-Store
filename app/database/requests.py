@@ -154,3 +154,39 @@ async def set_order_status(session: AsyncSession, order_id: int, status: str) ->
     if order is not None:
         order.status = status
         await session.commit()
+
+
+async def add_product(
+    session: AsyncSession,
+    category_id: int,
+    name: str,
+    brand: str,
+    price: float,
+    photo: str,
+    description: str,
+) -> None:
+    session.add(
+        Product(
+            category_id=category_id,
+            name=name,
+            brand=brand,
+            price=price,
+            photo=photo,
+            description=description,
+            stock=10,
+            rating=5.0,
+        )
+    )
+    await session.commit()
+
+
+async def get_all_products(session: AsyncSession) -> list[Product]:
+    result = await session.scalars(select(Product).order_by(Product.id))
+    return list(result)
+
+
+async def delete_product(session: AsyncSession, product_id: int) -> None:
+    product = await session.get(Product, product_id)
+    if product is not None:
+        await session.delete(product)
+        await session.commit()

@@ -6,3 +6,12 @@ class Checkout(StatesGroup):
     phone = State()
     address = State()
     confirm = State()
+
+
+class AddProduct(StatesGroup):
+    category = State()
+    name = State()
+    brand = State()
+    price = State()
+    photo = State()
+    description = State()
