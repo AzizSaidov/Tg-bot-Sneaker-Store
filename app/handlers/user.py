@@ -4,50 +4,57 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.requests import get_or_create_user, set_user_lang
-from app.keyboards import language_keyboard
+from app.keyboards import language_keyboard, main_menu
 from app.texts import t
 
 router = Router()
 
 
+async def _user(session: AsyncSession, source: Message | CallbackQuery):
+    return await get_or_create_user(
+        session,
+        source.from_user.id,
+        source.from_user.username,
+        source.from_user.full_name,
+    )
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession) -> None:
-    user, created = await get_or_create_user(
-        session,
-        message.from_user.id,
-        message.from_user.username,
-        message.from_user.full_name,
-    )
+    user, created = await _user(session, message)
     if created:
         await message.answer(
             t("choose_language", user.lang), reply_markup=language_keyboard()
         )
     else:
-        await message.answer(t("start", user.lang))
+        await message.answer(t("menu", user.lang), reply_markup=main_menu(user.lang))
 
 
-@router.message(Command("language"))
-async def cmd_language(message: Message, session: AsyncSession) -> None:
-    user, _ = await get_or_create_user(
-        session,
-        message.from_user.id,
-        message.from_user.username,
-        message.from_user.full_name,
-    )
-    await message.answer(
-        t("choose_language", user.lang), reply_markup=language_keyboard()
-    )
+@router.message(Command("menu"))
+async def cmd_menu(message: Message, session: AsyncSession) -> None:
+    user, _ = await _user(session, message)
+    await message.answer(t("menu", user.lang), reply_markup=main_menu(user.lang))
 
 
 @router.callback_query(F.data.startswith("lang:"))
 async def set_language(callback: CallbackQuery, session: AsyncSession) -> None:
     lang = callback.data.split(":")[1]
-    user, _ = await get_or_create_user(
-        session,
-        callback.from_user.id,
-        callback.from_user.username,
-        callback.from_user.full_name,
-    )
+    user, _ = await _user(session, callback)
     await set_user_lang(session, user, lang)
-    await callback.message.edit_text(t("start", lang))
+    await callback.message.edit_text(t("menu", lang), reply_markup=main_menu(lang))
     await callback.answer(t("language_set", lang))
+
+
+@router.callback_query(F.data == "menu:language")
+async def open_language(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    await callback.message.edit_text(
+        t("choose_language", user.lang), reply_markup=language_keyboard()
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("menu:"))
+async def menu_placeholder(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    await callback.answer(t("soon", user.lang), show_alert=True)
