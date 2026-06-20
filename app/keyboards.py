@@ -100,6 +100,14 @@ def back_menu_keyboard(lang: str) -> InlineKeyboardMarkup:
     )
 
 
+def ai_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=t("btn_exit", lang), callback_data="ai:exit")]
+        ]
+    )
+
+
 def confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[

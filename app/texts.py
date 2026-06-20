@@ -61,6 +61,10 @@ TEXTS = {
         "stats_orders": "Orders",
         "stats_revenue": "Revenue",
         "stats_top": "Top products",
+        "ai_welcome": "🤖 <b>AI Consultant</b>\n\nHi! Ask me anything about our sneakers, your orders or delivery. Type /cancel to exit.",
+        "ai_error": "⚠️ Sorry, I can't answer right now. Please try again.",
+        "ai_no_orders": "(no orders yet)",
+        "btn_exit": "⬅️ Exit",
     },
     "ru": {
         "choose_language": "🌐 Выберите язык:",
@@ -122,6 +126,10 @@ TEXTS = {
         "stats_orders": "Заказов",
         "stats_revenue": "Выручка",
         "stats_top": "Топ товаров",
+        "ai_welcome": "🤖 <b>AI-консультант</b>\n\nПривет! Спроси про наши кроссовки, твои заказы или доставку. Для выхода — /cancel.",
+        "ai_error": "⚠️ Извините, сейчас не могу ответить. Попробуйте ещё раз.",
+        "ai_no_orders": "(заказов пока нет)",
+        "btn_exit": "⬅️ Выход",
     },
 }
 

@@ -15,3 +15,7 @@ class AddProduct(StatesGroup):
     price = State()
     photo = State()
     description = State()
+
+
+class AiChat(StatesGroup):
+    active = State()

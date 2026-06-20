@@ -20,7 +20,9 @@ from app.database.requests import (
     remove_cart_item,
     set_user_lang,
 )
+from app.ai import consult
 from app.keyboards import (
+    ai_keyboard,
     back_menu_keyboard,
     cart_empty_keyboard,
     cart_keyboard,
@@ -30,7 +32,7 @@ from app.keyboards import (
     main_menu,
     product_keyboard,
 )
-from app.states import Checkout
+from app.states import AiChat, Checkout
 from app.texts import status_label, t
 from config import settings
 
@@ -176,6 +178,61 @@ async def open_orders(callback: CallbackQuery, session: AsyncSession) -> None:
         text = t("orders_title", user.lang) + "\n\n" + "\n\n".join(blocks)
     await callback.message.edit_text(text, reply_markup=back_menu_keyboard(user.lang))
     await callback.answer()
+
+
+@router.callback_query(F.data == "menu:ai")
+async def ai_start(callback: CallbackQuery, session: AsyncSession, state: FSMContext) -> None:
+    user, _ = await _user(session, callback)
+    await state.set_state(AiChat.active)
+    await state.update_data(history=[])
+    await callback.message.edit_text(t("ai_welcome", user.lang), reply_markup=ai_keyboard(user.lang))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "ai:exit")
+async def ai_exit(callback: CallbackQuery, session: AsyncSession, state: FSMContext) -> None:
+    user, _ = await _user(session, callback)
+    await state.clear()
+    await callback.message.edit_text(t("menu", user.lang), reply_markup=main_menu(user.lang))
+    await callback.answer()
+
+
+@router.message(AiChat.active)
+async def ai_message(
+    message: Message, session: AsyncSession, state: FSMContext, bot: Bot
+) -> None:
+    user, _ = await _user(session, message)
+    data = await state.get_data()
+    history = data.get("history", [])
+    history.append({"role": "user", "content": message.text})
+
+    categories = await get_categories(session)
+    lines = []
+    for category in categories:
+        for product in await get_products(session, category.id):
+            lines.append(f"- {product.brand} {product.name} (${product.price}) [{category.name}]")
+    catalog = "\n".join(lines)
+
+    orders = await get_user_orders(session, user.id)
+    if orders:
+        orders_text = "\n".join(
+            f"#{o.id} {status_label(o.status, user.lang)} ${o.total}" for o in orders
+        )
+    else:
+        orders_text = t("ai_no_orders", user.lang)
+
+    await bot.send_chat_action(message.chat.id, "typing")
+    try:
+        answer = await consult(
+            history, user.lang, user.full_name or "Customer", catalog, orders_text
+        )
+    except Exception:
+        await message.answer(t("ai_error", user.lang), reply_markup=ai_keyboard(user.lang))
+        return
+
+    history.append({"role": "assistant", "content": answer})
+    await state.update_data(history=history[-8:])
+    await message.answer(answer, reply_markup=ai_keyboard(user.lang))
 
 
 @router.callback_query(F.data.startswith("menu:"))
