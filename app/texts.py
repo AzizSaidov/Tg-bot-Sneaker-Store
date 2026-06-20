@@ -17,6 +17,12 @@ TEXTS = {
         "btn_add_cart": "🛒 Add to cart",
         "btn_categories": "⬅️ Categories",
         "btn_menu": "🏠 Menu",
+        "cart_title": "🛒 <b>Your Cart</b>",
+        "cart_empty": "🛒 Your cart is empty.",
+        "cart_total": "Total",
+        "added_to_cart": "✅ Added to cart",
+        "btn_checkout": "💳 Checkout",
+        "btn_clear": "🗑 Clear cart",
     },
     "ru": {
         "choose_language": "🌐 Выберите язык:",
@@ -34,6 +40,12 @@ TEXTS = {
         "btn_add_cart": "🛒 В корзину",
         "btn_categories": "⬅️ Категории",
         "btn_menu": "🏠 Меню",
+        "cart_title": "🛒 <b>Ваша корзина</b>",
+        "cart_empty": "🛒 Ваша корзина пуста.",
+        "cart_total": "Итого",
+        "added_to_cart": "✅ Добавлено в корзину",
+        "btn_checkout": "💳 Оформить заказ",
+        "btn_clear": "🗑 Очистить корзину",
     },
 }
 

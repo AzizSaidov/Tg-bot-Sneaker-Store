@@ -1,7 +1,8 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.database.models import Category, Product, User
+from app.database.models import CartItem, Category, Product, User
 
 
 async def get_or_create_user(
@@ -38,3 +39,58 @@ async def get_products(session: AsyncSession, category_id: int) -> list[Product]
 
 async def get_product(session: AsyncSession, product_id: int) -> Product | None:
     return await session.scalar(select(Product).where(Product.id == product_id))
+
+
+async def add_to_cart(session: AsyncSession, user_id: int, product_id: int) -> None:
+    item = await session.scalar(
+        select(CartItem).where(
+            CartItem.user_id == user_id, CartItem.product_id == product_id
+        )
+    )
+    if item is None:
+        session.add(CartItem(user_id=user_id, product_id=product_id, quantity=1))
+    else:
+        item.quantity += 1
+    await session.commit()
+
+
+async def get_cart_items(session: AsyncSession, user_id: int) -> list[CartItem]:
+    result = await session.scalars(
+        select(CartItem)
+        .where(CartItem.user_id == user_id)
+        .order_by(CartItem.id)
+        .options(selectinload(CartItem.product))
+    )
+    return list(result)
+
+
+async def change_cart_quantity(
+    session: AsyncSession, user_id: int, product_id: int, delta: int
+) -> None:
+    item = await session.scalar(
+        select(CartItem).where(
+            CartItem.user_id == user_id, CartItem.product_id == product_id
+        )
+    )
+    if item is None:
+        return
+    item.quantity += delta
+    if item.quantity <= 0:
+        await session.delete(item)
+    await session.commit()
+
+
+async def remove_cart_item(session: AsyncSession, user_id: int, product_id: int) -> None:
+    item = await session.scalar(
+        select(CartItem).where(
+            CartItem.user_id == user_id, CartItem.product_id == product_id
+        )
+    )
+    if item is not None:
+        await session.delete(item)
+        await session.commit()
+
+
+async def clear_cart(session: AsyncSession, user_id: int) -> None:
+    await session.execute(delete(CartItem).where(CartItem.user_id == user_id))
+    await session.commit()

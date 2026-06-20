@@ -5,14 +5,21 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, FSInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.models import Product
+from app.database.models import Product, User
 from app.database.requests import (
+    add_to_cart,
+    change_cart_quantity,
+    clear_cart,
+    get_cart_items,
     get_categories,
     get_or_create_user,
     get_products,
+    remove_cart_item,
     set_user_lang,
 )
 from app.keyboards import (
+    cart_empty_keyboard,
+    cart_keyboard,
     categories_keyboard,
     language_keyboard,
     main_menu,
@@ -59,6 +66,18 @@ async def show_product(
         await message.answer_photo(FSInputFile(photo_path), caption=caption, reply_markup=keyboard)
     else:
         await message.answer(caption, reply_markup=keyboard)
+
+
+async def render_cart(callback: CallbackQuery, session: AsyncSession, user: User) -> None:
+    items = await get_cart_items(session, user.id)
+    if not items:
+        await callback.message.edit_text(
+            t("cart_empty", user.lang), reply_markup=cart_empty_keyboard(user.lang)
+        )
+        return
+    total = sum(item.product.price * item.quantity for item in items)
+    text = f"{t('cart_title', user.lang)}\n\n{t('cart_total', user.lang)}: <b>${total}</b>"
+    await callback.message.edit_text(text, reply_markup=cart_keyboard(items, user.lang))
 
 
 @router.message(CommandStart())
@@ -115,6 +134,13 @@ async def open_home(callback: CallbackQuery, session: AsyncSession) -> None:
     await callback.answer()
 
 
+@router.callback_query(F.data == "menu:cart")
+async def open_cart(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    await render_cart(callback, session, user)
+    await callback.answer()
+
+
 @router.callback_query(F.data.startswith("menu:"))
 async def menu_placeholder(callback: CallbackQuery, session: AsyncSession) -> None:
     user, _ = await _user(session, callback)
@@ -145,6 +171,49 @@ async def noop(callback: CallbackQuery) -> None:
 
 
 @router.callback_query(F.data.startswith("add:"))
-async def add_to_cart(callback: CallbackQuery, session: AsyncSession) -> None:
+async def add_product(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    product_id = int(callback.data.split(":")[1])
+    await add_to_cart(session, user.id, product_id)
+    await callback.answer(t("added_to_cart", user.lang))
+
+
+@router.callback_query(F.data.startswith("inc:"))
+async def inc_item(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    product_id = int(callback.data.split(":")[1])
+    await change_cart_quantity(session, user.id, product_id, 1)
+    await render_cart(callback, session, user)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("dec:"))
+async def dec_item(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    product_id = int(callback.data.split(":")[1])
+    await change_cart_quantity(session, user.id, product_id, -1)
+    await render_cart(callback, session, user)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("del:"))
+async def del_item(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    product_id = int(callback.data.split(":")[1])
+    await remove_cart_item(session, user.id, product_id)
+    await render_cart(callback, session, user)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cart:clear")
+async def cart_clear(callback: CallbackQuery, session: AsyncSession) -> None:
+    user, _ = await _user(session, callback)
+    await clear_cart(session, user.id)
+    await render_cart(callback, session, user)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "checkout")
+async def checkout(callback: CallbackQuery, session: AsyncSession) -> None:
     user, _ = await _user(session, callback)
     await callback.answer(t("soon", user.lang), show_alert=True)
