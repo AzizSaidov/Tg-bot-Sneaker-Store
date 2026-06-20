@@ -90,3 +90,14 @@ def cart_empty_keyboard(lang: str) -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text=t("btn_menu", lang), callback_data="menu:home")],
         ]
     )
+
+
+def confirm_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text=t("btn_confirm", lang), callback_data="order:confirm"),
+                InlineKeyboardButton(text=t("btn_cancel", lang), callback_data="order:cancel"),
+            ]
+        ]
+    )

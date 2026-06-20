@@ -2,7 +2,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.database.models import CartItem, Category, Product, User
+from app.database.models import CartItem, Category, Order, OrderItem, Product, User
 
 
 async def get_or_create_user(
@@ -94,3 +94,29 @@ async def remove_cart_item(session: AsyncSession, user_id: int, product_id: int)
 async def clear_cart(session: AsyncSession, user_id: int) -> None:
     await session.execute(delete(CartItem).where(CartItem.user_id == user_id))
     await session.commit()
+
+
+async def create_order(
+    session: AsyncSession, user_id: int, full_name: str, phone: str, address: str
+) -> Order | None:
+    items = await get_cart_items(session, user_id)
+    if not items:
+        return None
+    total = sum(item.product.price * item.quantity for item in items)
+    order = Order(
+        user_id=user_id, full_name=full_name, phone=phone, address=address, total=total
+    )
+    session.add(order)
+    await session.flush()
+    for item in items:
+        session.add(
+            OrderItem(
+                order_id=order.id,
+                product_id=item.product_id,
+                quantity=item.quantity,
+                price=item.product.price,
+            )
+        )
+    await session.execute(delete(CartItem).where(CartItem.user_id == user_id))
+    await session.commit()
+    return order

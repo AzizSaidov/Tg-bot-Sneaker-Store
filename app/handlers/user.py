@@ -1,7 +1,8 @@
 import os
 
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, FSInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +11,7 @@ from app.database.requests import (
     add_to_cart,
     change_cart_quantity,
     clear_cart,
+    create_order,
     get_cart_items,
     get_categories,
     get_or_create_user,
@@ -21,11 +23,14 @@ from app.keyboards import (
     cart_empty_keyboard,
     cart_keyboard,
     categories_keyboard,
+    confirm_keyboard,
     language_keyboard,
     main_menu,
     product_keyboard,
 )
+from app.states import Checkout
 from app.texts import t
+from config import settings
 
 router = Router()
 
@@ -95,6 +100,15 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
 async def cmd_menu(message: Message, session: AsyncSession) -> None:
     user, _ = await _user(session, message)
     await message.answer(t("menu", user.lang), reply_markup=main_menu(user.lang))
+
+
+@router.message(Command("cancel"))
+async def cmd_cancel(message: Message, session: AsyncSession, state: FSMContext) -> None:
+    if await state.get_state() is None:
+        return
+    user, _ = await _user(session, message)
+    await state.clear()
+    await message.answer(t("order_cancelled", user.lang), reply_markup=main_menu(user.lang))
 
 
 @router.callback_query(F.data.startswith("lang:"))
@@ -214,6 +228,83 @@ async def cart_clear(callback: CallbackQuery, session: AsyncSession) -> None:
 
 
 @router.callback_query(F.data == "checkout")
-async def checkout(callback: CallbackQuery, session: AsyncSession) -> None:
+async def checkout_start(
+    callback: CallbackQuery, session: AsyncSession, state: FSMContext
+) -> None:
     user, _ = await _user(session, callback)
-    await callback.answer(t("soon", user.lang), show_alert=True)
+    items = await get_cart_items(session, user.id)
+    if not items:
+        await callback.answer(t("cart_empty", user.lang), show_alert=True)
+        return
+    await state.set_state(Checkout.full_name)
+    await callback.message.answer(t("checkout_name", user.lang))
+    await callback.answer()
+
+
+@router.message(Checkout.full_name)
+async def checkout_name(message: Message, session: AsyncSession, state: FSMContext) -> None:
+    user, _ = await _user(session, message)
+    await state.update_data(full_name=message.text)
+    await state.set_state(Checkout.phone)
+    await message.answer(t("checkout_phone", user.lang))
+
+
+@router.message(Checkout.phone)
+async def checkout_phone(message: Message, session: AsyncSession, state: FSMContext) -> None:
+    user, _ = await _user(session, message)
+    await state.update_data(phone=message.text)
+    await state.set_state(Checkout.address)
+    await message.answer(t("checkout_address", user.lang))
+
+
+@router.message(Checkout.address)
+async def checkout_address(message: Message, session: AsyncSession, state: FSMContext) -> None:
+    user, _ = await _user(session, message)
+    await state.update_data(address=message.text)
+    data = await state.get_data()
+    items = await get_cart_items(session, user.id)
+    total = sum(item.product.price * item.quantity for item in items)
+    lines = "\n".join(f"• {item.product.name} ×{item.quantity}" for item in items)
+    text = (
+        f"{t('checkout_confirm', user.lang)}\n\n"
+        f"{lines}\n\n"
+        f"{t('cart_total', user.lang)}: <b>${total}</b>\n\n"
+        f"👤 {data['full_name']}\n📞 {data['phone']}\n🏠 {data['address']}"
+    )
+    await state.set_state(Checkout.confirm)
+    await message.answer(text, reply_markup=confirm_keyboard(user.lang))
+
+
+@router.callback_query(Checkout.confirm, F.data == "order:confirm")
+async def order_confirm(
+    callback: CallbackQuery, session: AsyncSession, state: FSMContext, bot: Bot
+) -> None:
+    user, _ = await _user(session, callback)
+    data = await state.get_data()
+    order = await create_order(
+        session, user.id, data["full_name"], data["phone"], data["address"]
+    )
+    await state.clear()
+    if order is None:
+        await callback.message.edit_text(t("cart_empty", user.lang))
+        await callback.answer()
+        return
+    await callback.message.edit_text(t("order_placed", user.lang).format(id=order.id))
+    await callback.message.answer(t("menu", user.lang), reply_markup=main_menu(user.lang))
+    for admin_id in settings.admin_ids:
+        await bot.send_message(
+            admin_id,
+            f"🔔 <b>New order #{order.id}</b>\n"
+            f"👤 {data['full_name']}\n📞 {data['phone']}\n🏠 {data['address']}\n"
+            f"💰 <b>${order.total}</b>",
+        )
+    await callback.answer()
+
+
+@router.callback_query(Checkout.confirm, F.data == "order:cancel")
+async def order_cancel(callback: CallbackQuery, session: AsyncSession, state: FSMContext) -> None:
+    user, _ = await _user(session, callback)
+    await state.clear()
+    await callback.message.edit_text(t("order_cancelled", user.lang))
+    await callback.message.answer(t("menu", user.lang), reply_markup=main_menu(user.lang))
+    await callback.answer()
